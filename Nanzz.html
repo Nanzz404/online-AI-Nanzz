@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>NANZZ AI - Chat AI Modern</title>
+<style>
+    /* ================== Reset & Body ================== */
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,sans-serif;background:linear-gradient(135deg,#0f0f23 0%,#1a1a2e 50%,#16213e 100%);color:#e2e8f0;height:100vh;overflow:hidden;}
+    .app{display:flex;flex-direction:column;height:100vh;}
+
+    /* ================== Header ================== */
+    .header{background:rgba(15,15,35,0.95);backdrop-filter:blur(20px);border-bottom:1px solid rgba(255,255,255,0.1);padding:1rem 2rem;position:sticky;top:0;z-index:100;}
+    .header-content{display:flex;align-items:center;gap:12px;max-width:1200px;margin:0 auto;width:100%;}
+    .logo{width:40px;height:40px;filter:drop-shadow(0 4px 12px rgba(99,102,241,0.3));}
+    .logo-text{font-size:1.5rem;font-weight:700;background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;}
+    
+    /* ================== Side Panel (Menu Garis Tiga) ================== */
+    .side-panel{
+        position:fixed;
+        top:0;
+        right:-300px;
+        width:300px;
+        height:100%;
+        background:rgba(15,15,35,0.98);
+        backdrop-filter:blur(20px);
+        border-left:1px solid rgba(255,255,255,0.1);
+        z-index:299;
+        display:flex;
+        flex-direction:column;
+        padding:5rem 1rem 1rem 1rem;
+        transition:right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        overflow-y:auto;
+        box-shadow: -10px 0 30px rgba(0,0,0,0.5);
+    }
+    .side-panel.show{right:0;}
+    .panel-menu{list-style:none;padding:0;margin:0;}
+    .panel-menu li{margin-bottom:0.75rem;}
+    .menu-btn{
+        width:100%;
+        background:rgba(255,255,255,0.05);
+        color:white;
+        padding:0.8rem 1rem;
+        font-size:0.95rem;
+        font-weight:500;
+        border:1px solid rgba(255,255,255,0.1);
+        border-radius:10px;
+        text-align:left;
+        cursor:pointer;
+        display:flex;
+        justify-content:space-between;
+        align-items:center;
+        transition: 0.2s;
+    }
+    .menu-btn:hover{background:rgba(99,102,241,0.2);}
+    .menu-btn .arrow{transition:transform 0.3s; font-size: 0.8rem;}
+    .menu-btn.active .arrow{transform:rotate(180deg);}
+    .submenu{display:none;flex-direction:column;margin-top:0.5rem;margin-left:0.5rem; gap: 5px;}
+    .submenu.show{display:flex;}
+    .submenu a{padding:0.6rem 1rem;color:#94a3b8;text-decoration:none;border-radius:8px;transition:all 0.2s; font-size: 0.9rem;}
+    .submenu a:hover{background:rgba(99,102,241,0.1); color: #6366f1;}
+
+    /* ================== Chat Container ================== */
+    .chat-container{flex:1;overflow:hidden;display:flex;flex-direction:column;max-width:1200px;margin:0 auto;width:100%;padding:2rem;}
+    .welcome-message{display:flex;align-items:center;justify-content:center;height:100%;text-align:center;}
+    .welcome-content h2{font-size:2rem;font-weight:600;margin-bottom:1rem;background:linear-gradient(135deg,#6366f1,#8b5cf6);-webkit-background-clip:text;-webkit-text-fill-color:transparent;}
+    .welcome-content p{font-size:1.1rem;color:#94a3b8;max-width:400px;}
+    .messages{flex:1;overflow-y:auto;padding-right:1rem;scroll-behavior:smooth;}
+    .messages::-webkit-scrollbar{width:6px;}
+    .messages::-webkit-scrollbar-track{background:rgba(255,255,255,0.05);border-radius:3px;}
+    .messages::-webkit-scrollbar-thumb{background:rgba(99,102,241,0.3);border-radius:3px;}
+    .message{display:flex;margin-bottom:1.5rem;animation:fadeIn 0.3s ease-out;}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(20px);}to{opacity:1;transform:translateY(0);}}
+    .user-message{justify-content:flex-end;}
+    .ai-message{justify-content:flex-start;}
+    .message-content{max-width:70%;padding:1rem 1.25rem;border-radius:1.25rem;font-size:0.95rem;line-height:1.6;position:relative;word-wrap:break-word;}
+    .user-message .message-content{background:linear-gradient(135deg,#6366f1,#8b5cf6);color:white;border-bottom-right-radius:0.5rem;box-shadow:0 4px 20px rgba(99,102,241,0.3);}
+    .ai-message .message-content{background:rgba(255,255,255,0.08);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);border-bottom-left-radius:0.5rem;box-shadow:0 2px 15px rgba(0,0,0,0.2);}
+
+    /* ================== Typing Indicator ================== */
+    .typing-indicator{display:none;align-items:center;gap:12px;padding:1rem 1.25rem;background:rgba(255,255,255,0.05);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.1);border-radius:1.25rem;margin-bottom:1.5rem;max-width:70%;}
+    .typing-dots{display:flex;gap:4px;}
+    .typing-dots span{width:8px;height:8px;background:#6366f1;border-radius:50%;animation:typing 1.4s infinite ease-in-out;}
+    .typing-dots span:nth-child(1){animation-delay:-0.32s;}
+    .typing-dots span:nth-child(2){animation-delay:-0.16s;}
+    @keyframes typing{0%,80%,100%{transform:scale(0.8);opacity:0.5;}40%{transform:scale(1);opacity:1;}}
+    .typing-text{font-size:0.95rem;color:#94a3b8;}
+
+    /* ================== Input ================== */
+    .input-container{padding:0 2rem 2rem;background:rgba(15,15,35,0.8);backdrop-filter:blur(20px);border-top:1px solid rgba(255,255,255,0.1);}
+    .input-wrapper{max-width:1200px;margin:0 auto;display:flex;gap:12px;align-items:flex-end;width:100%;}
+    #messageInput{flex:1;background:rgba(255,255,255,0.08);backdrop-filter:blur(20px);border:1px solid rgba(255,255,255,0.2);border-radius:1.25rem;padding:1rem 1.5rem;color:#e2e8f0;font-size:0.95rem;resize:none;min-height:56px;max-height:200px;transition:all 0.2s ease;outline:none;}
+    #messageInput:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,0.1);}
+    #messageInput::placeholder{color:#94a3b8;}
+    .send-btn{width:56px;height:56px;background:linear-gradient(135deg,#6366f1,#8b5cf6);border:none;border-radius:50%;color:white;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:all 0.2s ease;flex-shrink:0;box-shadow:0 4px 20px rgba(99,102,241,0.3);}
+    .send-btn:hover:not(:disabled){transform:translateY(-2px);box-shadow:0 8px 25px rgba(99,102,241,0.4);}
+    .send-btn:disabled{opacity:0.5;cursor:not-allowed;}
+    .send-icon{width:24px;height:24px;}
+
+    /* ================== Status Indicator ================== */
+    .status-indicator{position:fixed;top:80px;right:2rem;padding:0.75rem 1rem;background:rgba(34,197,94,0.2);border:1px solid rgba(34,197,94,0.3);border-radius:8px;color:#22c55e;font-size:0.85rem;font-weight:500;backdrop-filter:blur(10px);opacity:0;transform:translateX(100%);transition:all 0.3s ease; z-index: 500;}
+    .status-indicator.show{opacity:1;transform:translateX(0);}
+    .status-indicator.error{background:rgba(239,68,68,0.2);border-color:rgba(239,68,68,0.3);color:#ef4444;}
+
+    /* ================== Hamburger Menu Button ================== */
+    #hamburgerMenu{position:fixed;top:16px;right:16px;width:40px;height:40px;background:rgba(15,15,35,0.8);backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,0.1);border-radius:8px;display:flex;align-items:center;justify-content:center;cursor:pointer;z-index:300;flex-direction:column;gap:5px;padding:6px;}
+    #hamburgerMenu span{display:block;width:24px;height:2px;background:#6366f1;border-radius:2px; transition: 0.3s;}
+
+    /* ================== Responsive ================== */
+    @media(max-width:768px){
+        .header,.input-container{padding-left:1rem;padding-right:1rem;}
+        .chat-container{padding:1rem;}
+        .logo{width:32px;height:32px;}
+        .logo-text{font-size:1.25rem;}
+        .message-content{max-width:85%;}
+        .welcome-content h2{font-size:1.5rem;}
+        .status-indicator{right:1rem;top:70px;left:1rem;max-width:calc(100% - 2rem);}
+        #hamburgerMenu{top:12px;right:12px;}
+    }
+</style>
+</head>
+<body>
+<div class="app">
+    <div class="status-indicator" id="statusIndicator"></div>
+
+    <header class="header">
+        <div class="header-content">
+            <svg class="logo" viewBox="0 0 40 40" fill="none">
+                <rect width="40" height="40" rx="12" fill="url(#paint0_linear)"/>
+                <path d="M12 12L20 18L28 12V28H12V12Z" fill="#6366F1"/>
+                <path d="M14 16L20 20.5L26 16V24H14V16Z" fill="#8B5CF6"/>
+                <defs>
+                    <linearGradient id="paint0_linear" x1="20" y1="0" x2="20" y2="40">
+                        <stop stop-color="#667eea"/>
+                        <stop offset="1" stop-color="#764ba2"/>
+                    </linearGradient>
+                </defs>
+            </svg>
+            <h1 class="logo-text">NANZZ AI</h1>
+        </div>
+    </header>
+
+    <div id="sidePanel" class="side-panel">
+        <ul class="panel-menu">
+            <li>
+                <button class="menu-btn">Developer <span class="arrow">▼</span></button>
+                <div class="submenu">
+                    <span style="padding: 0.6rem 1rem; color: #94a3b8; font-size: 0.9rem; display: block; border-bottom: 1px solid rgba(255,255,255,0.03);">
+                        Dev : Adnan Fadlan Fadillah
+                    </span>
+                    <span style="padding: 0.6rem 1rem; color: #94a3b8; font-size: 0.9rem; display: block;">
+                        Status : Pelajar
+                    </span>
+                </div>
+            </li>
+            <li>
+                <button class="menu-btn">Support <span class="arrow">▼</span></button>
+                <div class="submenu">
+                    <span style="padding: 0.6rem 1rem; color: #94a3b8; font-size: 0.9rem; display: block; border-bottom: 1px solid rgba(255,255,255,0.03);">
+                        Orang tua : Support System
+                    </span>
+                    <span style="padding: 0.6rem 1rem; color: #94a3b8; font-size: 0.9rem; display: block; border-bottom: 1px solid rgba(255,255,255,0.03);">
+                        Charissa : My Love
+                    </span>
+                    <span style="padding: 0.6rem 1rem; color: #94a3b8; font-size: 0.9rem; display: block;">
+                        DesaOfficial : My Tangan Kanan
+                    </span>
+                </div>
+            </li>
+            <li>
+              <li>
+                <button class="menu-btn">PERHATIAN<span class="arrow">▼</span></button>
+                <div class="submenu">
+                    <span style="padding: 0.6rem 1rem; color: #94a3b8; font-size: 0.85rem; display: block; font-style: italic;">
+                        NANZZ AI dikembangkan oleh seorang pelajar yang berdedikasi dalam inovasi teknologi. Mohon gunakan AI ini secara bijak dan bertanggung jawab untuk mendukung pengalaman yang aman dan produktif.
+                    </span>
+                </div>
+            </li>
+                <button class="menu-btn">Kirim Pesan ke Admin <span class="arrow">▼</span></button>
+                <div class="submenu">
+                    <span style="padding: 0.6rem 1rem; color: #94a3b8; font-size: 0.85rem; display: block; font-style: italic;">
+                       @Nanzz666 [ Telegram ]
+                    </span>
+                </div>
+            </li>
+        </ul>
+    </div>
+
+    <main class="chat-container">
+        <div class="welcome-message" id="welcomeMessage">
+            <div class="welcome-content">
+                <h2>🚀 Selamat Datang di NANZZ AI</h2>
+                <p>Mari kita mulai, bagaimana NANZZ dapat membantu Anda hari ini?</p>
+            </div>
+        </div>
+        <div class="messages" id="messages"></div>
+
+        <div class="typing-indicator" id="typingIndicator">
+            <div class="typing-dots"><span></span><span></span><span></span></div>
+            <span class="typing-text">NANZZ sedang mengetik...</span>
+        </div>
+    </main>
+
+    <div class="input-container">
+        <div class="input-wrapper">
+            <textarea id="messageInput" placeholder="Tanya NANZZ-AI" rows="1"></textarea>
+            <button id="sendButton" class="send-btn" title="Kirim Pesan">
+                <svg class="send-icon" viewBox="0 0 24 24" fill="currentColor"><path d="M2.01 21L23 12 2.01 3 2 10l15 2-15 2z"/></svg>
+            </button>
+        </div>
+    </div>
+</div>
+
+<div id="hamburgerMenu">
+    <span></span><span></span><span></span>
+</div>
+
+<script>
+class NanzzAI {
+    constructor(){
+        this.API_URL = 'https://defandryan.shanydev.web.id';
+        this.API_PORT = '61156';
+        this.fullApiUrl = `${this.API_URL}:${this.API_PORT}/api/chat`;
+        this.messagesContainer = document.getElementById('messages');
+        this.messageInput = document.getElementById('messageInput');
+        this.sendButton = document.getElementById('sendButton');
+        this.welcomeMessage = document.getElementById('welcomeMessage');
+        this.typingIndicator = document.getElementById('typingIndicator');
+        this.statusIndicator = document.getElementById('statusIndicator');
+        this.init();
+    }
+    init(){
+        this.sendButton.addEventListener('click',()=>this.sendMessage());
+        this.messageInput.addEventListener('keydown',(e)=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();this.sendMessage();}});
+        this.messageInput.addEventListener('input',this.autoResize.bind(this));
+        this.autoResize();
+        this.testConnection();
+    }
+    testConnection(){
+        fetch(this.fullApiUrl.replace('/api/chat','/health')||this.fullApiUrl,{method:'GET'})
+        .then(()=>this.showStatus('✅ Server terhubung!','success'))
+        .catch(()=>this.showStatus('⚠️ Server belum terkoneksi. Hubungi admin sekarang.','error'));
+    }
+    autoResize(){
+        this.messageInput.style.height='auto';
+        this.messageInput.style.height=Math.min(this.messageInput.scrollHeight,200)+'px';
+    }
+    async sendMessage(){
+        const message=this.messageInput.value.trim();
+        if(!message) return;
+        this.addMessage(message,'user');
+        this.messageInput.value='';
+        this.autoResize();
+        this.showTypingIndicator();
+        this.sendButton.disabled=true;
+        try{
+            const controller=new AbortController();
+            const timeoutId=setTimeout(()=>controller.abort(),30000);
+            const response=await fetch(this.fullApiUrl,{
+                method:'POST',
+                headers:{'Content-Type':'application/json'},
+                body:JSON.stringify({message}),
+                signal:controller.signal
+            });
+            clearTimeout(timeoutId);
+            if(!response.ok) throw new Error('Response not OK');
+            const data=await response.json();
+            this.addMessage(data.response || 'AI tidak merespon', 'ai');
+        }catch(err){
+            this.addMessage('⚠️ Terjadi error: '+err.message,'ai');
+        }finally{
+            this.hideTypingIndicator();
+            this.sendButton.disabled=false;
+        }
+    }
+    addMessage(msg,type){
+        if(this.welcomeMessage) this.welcomeMessage.style.display='none';
+        const div=document.createElement('div');
+        div.className=`message ${type}-message`;
+        div.innerHTML=`<div class="message-content">${msg}</div>`;
+        this.messagesContainer.appendChild(div);
+        this.messagesContainer.scrollTop=this.messagesContainer.scrollHeight;
+    }
+    showTypingIndicator(){this.typingIndicator.style.display='flex';}
+    hideTypingIndicator(){this.typingIndicator.style.display='none';}
+    showStatus(msg,type){this.statusIndicator.textContent=msg;this.statusIndicator.className='status-indicator show '+(type==='error'?'error':'');setTimeout(()=>{this.statusIndicator.className='status-indicator';},4000);}
+}
+const nanzzAI=new NanzzAI();
+
+// Hamburger Menu Toggle
+const hamburgerMenu = document.getElementById('hamburgerMenu');
+const sidePanel = document.getElementById('sidePanel');
+
+hamburgerMenu.addEventListener('click', (e) => {
+    e.stopPropagation();
+    sidePanel.classList.toggle('show');
+});
+
+// Toggle Submenu didalam Side Panel
+document.querySelectorAll('.menu-btn').forEach(btn => {
+    btn.addEventListener('click', (e)=>{
+        e.stopPropagation();
+        const submenu = btn.nextElementSibling;
+        
+        // Tutup submenu lain yang sedang terbuka (Opsional agar rapi)
+        document.querySelectorAll('.submenu').forEach(s => {
+            if(s !== submenu) s.classList.remove('show');
+        });
+        document.querySelectorAll('.menu-btn').forEach(b => {
+            if(b !== btn) b.classList.remove('active');
+        });
+
+        submenu.classList.toggle('show');
+        btn.classList.toggle('active');
+    });
+});
+
+// Tutup panel jika klik di area luar panel
+document.addEventListener('click',(e)=>{
+    if(!sidePanel.contains(e.target) && !hamburgerMenu.contains(e.target)){
+        sidePanel.classList.remove('show');
+    }
+});
+</script>
+</body>
+</html>
